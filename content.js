@@ -45,8 +45,11 @@ function createMenu() {
   const menu = document.createElement('div');
   menu.id = 'chr-menu';
   menu.className = 'chr-menu';
+  menu.style.position = 'fixed';
+  menu.style.setProperty('position', 'fixed', 'important');
 
   menu.innerHTML = `
+    <div class="chr-menu-wrapper">
     <div class="chr-menu-header">
       <h3>Element Manager</h3>
       <div class="chr-header-buttons">
@@ -64,10 +67,6 @@ function createMenu() {
         <span class="chr-icon">❌</span>
         <span>Remove</span>
       </button>
-    </div>
-
-    <div class="chr-current-mode">
-      <span id="chr-mode-display">Click a mode to start</span>
     </div>
 
     <div class="chr-save-option">
@@ -112,6 +111,11 @@ function createMenu() {
       </div>
     </div>
 
+    <div class="chr-footer">
+      Made by Skyke with ❤️ • <a href="https://github.com/alxlemesh/chromeElementManager" target="_blank">GitHub</a>
+    </div>
+    </div>
+
     <div class="chr-settings-panel" id="chr-settings-panel" style="display: none;">
       <div class="chr-settings-header">
         <h4>Settings</h4>
@@ -129,10 +133,6 @@ function createMenu() {
         <input type="file" id="chr-import-file" accept=".json" style="display: none;">
       </div>
     </div>
-
-    <div class="chr-footer">
-      Made by Skyke with ❤️
-    </div>
   `;
 
   document.body.appendChild(menu);
@@ -147,10 +147,18 @@ function createMenu() {
   document.getElementById('chr-remove-btn').addEventListener('click', () => setMode('remove'));
 
   // Settings panel
-  document.getElementById('chr-settings-btn').addEventListener('click', () => {
-    document.getElementById('chr-settings-panel').style.display = 'flex';
+  document.getElementById('chr-settings-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Settings button clicked');
+    const panel = document.getElementById('chr-settings-panel');
+    console.log('Settings panel element:', panel);
+    panel.style.display = 'flex';
+    console.log('Settings panel display set to flex');
   });
-  document.getElementById('chr-settings-close').addEventListener('click', () => {
+  document.getElementById('chr-settings-close').addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     document.getElementById('chr-settings-panel').style.display = 'none';
   });
 
@@ -359,29 +367,22 @@ function setMode(mode) {
     btn.classList.remove('chr-active');
   });
 
-  const modeDisplay = document.getElementById('chr-mode-display');
   const previewAction = document.getElementById('chr-preview-action');
 
   if (mode === 'highlight') {
     document.getElementById('chr-highlight-btn').classList.add('chr-active');
-    modeDisplay.textContent = 'Highlight Mode';
-    modeDisplay.className = 'chr-mode-highlight';
     if (previewAction) {
       previewAction.textContent = 'Click to highlight this element';
       previewAction.className = 'chr-preview-action chr-action-highlight';
     }
   } else if (mode === 'remove') {
     document.getElementById('chr-remove-btn').classList.add('chr-active');
-    modeDisplay.textContent = 'Remove Mode';
-    modeDisplay.className = 'chr-mode-remove';
     if (previewAction) {
       previewAction.textContent = 'Click to remove this element';
       previewAction.className = 'chr-preview-action chr-action-remove';
     }
   } else {
     // mode === 'none' (stopped)
-    modeDisplay.textContent = 'Click a mode to start';
-    modeDisplay.className = '';
     const hoverPreview = document.getElementById('chr-hover-preview');
     if (hoverPreview) {
       hoverPreview.style.display = 'none';
@@ -541,6 +542,30 @@ function createListItem(item, index, type) {
     <button class="chr-delete-btn" data-index="${index}" data-type="${type}">×</button>
   `;
 
+  // Hover to highlight element on page
+  div.addEventListener('mouseenter', () => {
+    try {
+      const element = document.querySelector(item.selector);
+      if (element) {
+        element.classList.add('chr-focus-highlight');
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch (e) {
+      console.error('Error highlighting element:', e);
+    }
+  });
+
+  div.addEventListener('mouseleave', () => {
+    try {
+      const element = document.querySelector(item.selector);
+      if (element) {
+        element.classList.remove('chr-focus-highlight');
+      }
+    } catch (e) {
+      console.error('Error removing focus highlight:', e);
+    }
+  });
+
   const deleteBtn = div.querySelector('.chr-delete-btn');
   deleteBtn.addEventListener('click', () => {
     // Remove visual effect from page
@@ -549,6 +574,7 @@ function createListItem(item, index, type) {
         const element = document.querySelector(item.selector);
         if (element) {
           element.classList.remove('chr-highlighted');
+          element.classList.remove('chr-focus-highlight'); // Also remove hover highlight
         }
       } catch (e) {
         console.error('Error removing highlight:', e);
@@ -558,6 +584,7 @@ function createListItem(item, index, type) {
         const element = document.querySelector(item.selector);
         if (element) {
           element.style.display = ''; // Restore visibility
+          element.classList.remove('chr-focus-highlight'); // Also remove hover highlight
         }
       } catch (e) {
         console.error('Error restoring element:', e);
