@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Click Highlighter & Remover</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Click Highlighter & Remover</h1>
+    </header>
+
+    <div class="controls">
+      <button id="highlightBtn" class="btn btn-highlight">
+        <span class="icon">🖍️</span>
+        Click to Highlight
+      </button>
+      <button id="removeBtn" class="btn btn-remove">
+        <span class="icon">❌</span>
+        Click to Remove
+      </button>
+      <button id="stopBtn" class="btn btn-stop">
+        <span class="icon">⏹️</span>
+        Stop
+      </button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="highlights">
+        Highlighted (<span id="highlightCount">0</span>)
+      </button>
+      <button class="tab-btn" data-tab="removed">
+        Removed (<span id="removedCount">0</span>)
+      </button>
+    </div>
+
+    <div class="tab-content">
+      <div id="highlights" class="tab-pane active">
+        <div class="list-header">
+          <button id="clearHighlights" class="btn-clear">Clear All</button>
+        </div>
+        <div id="highlightsList" class="items-list">
+          <p class="empty-state">No highlighted elements yet</p>
+        </div>
+      </div>
+
+      <div id="removed" class="tab-pane">
+        <div class="list-header">
+          <button id="clearRemoved" class="btn-clear">Clear All</button>
+        </div>
+        <div id="removedList" class="items-list">
+          <p class="empty-state">No removed elements yet</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
