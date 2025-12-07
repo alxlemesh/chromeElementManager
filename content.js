@@ -1,4 +1,4 @@
-let currentMode = 'none'; // 'none', 'highlight', 'remove'
+let currentMode = "none"; // 'none', 'highlight', 'remove'
 let hoveredElement = null;
 let menuOpen = false;
 let menuElement = null;
@@ -15,8 +15,8 @@ function getUniqueSelector(element) {
 
     if (element.className) {
       const classes = Array.from(element.classList)
-        .filter(c => !c.startsWith('chr-'))
-        .join('.');
+        .filter((c) => !c.startsWith("chr-"))
+        .join(".");
       if (classes) {
         selector += `.${classes}`;
       }
@@ -37,21 +37,21 @@ function getUniqueSelector(element) {
     element = element.parentElement;
   }
 
-  return path.join(' > ');
+  return path.join(" > ");
 }
 
 // Create the in-page menu
 function createMenu() {
-  const menu = document.createElement('div');
-  menu.id = 'chr-menu';
-  menu.className = 'chr-menu';
-  menu.style.position = 'fixed';
-  menu.style.setProperty('position', 'fixed', 'important');
+  const menu = document.createElement("div");
+  menu.id = "chr-menu";
+  menu.className = "chr-menu";
+  menu.style.position = "fixed";
+  menu.style.setProperty("position", "fixed", "important");
 
   menu.innerHTML = `
     <div class="chr-menu-wrapper">
     <div class="chr-menu-header">
-      <h3>Element Manager</h3>
+      <h3>Element Highlighter & Remover</h3>
       <div class="chr-header-buttons">
         <button class="chr-settings-btn" id="chr-settings-btn">⚙️</button>
         <button class="chr-close-btn" id="chr-close-menu">×</button>
@@ -118,8 +118,9 @@ function createMenu() {
 
     <div class="chr-settings-panel" id="chr-settings-panel" style="display: none;">
       <div class="chr-settings-header">
+        <button class="chr-settings-back" id="chr-settings-back">← Back</button>
         <h4>Settings</h4>
-        <button class="chr-settings-close" id="chr-settings-close">×</button>
+        <span></span>
       </div>
       <div class="chr-settings-content">
         <button class="chr-settings-action-btn" id="chr-export-btn">
@@ -132,6 +133,20 @@ function createMenu() {
         </button>
         <input type="file" id="chr-import-file" accept=".json" style="display: none;">
       </div>
+      <div class="chr-settings-footer">
+        Made by Skyke with ❤️ • <a href="https://github.com/alxlemesh/chromeElementManager" target="_blank">GitHub</a>
+      </div>
+    </div>
+
+    <div class="chr-confirm-dialog" id="chr-confirm-dialog" style="display: none;">
+      <div class="chr-confirm-content">
+        <h4 id="chr-confirm-title">Confirm</h4>
+        <p id="chr-confirm-message">Are you sure?</p>
+        <div class="chr-confirm-buttons" id="chr-confirm-buttons">
+          <button class="chr-confirm-btn chr-confirm-cancel" id="chr-confirm-cancel">Cancel</button>
+          <button class="chr-confirm-btn chr-confirm-yes" id="chr-confirm-yes">Confirm</button>
+        </div>
+      </div>
     </div>
   `;
 
@@ -139,41 +154,85 @@ function createMenu() {
   menuElement = menu;
 
   // Add event listeners
-  document.getElementById('chr-close-menu').addEventListener('click', () => {
-    setMode('none'); // Auto-stop when closing menu
+  document.getElementById("chr-close-menu").addEventListener("click", () => {
+    setMode("none"); // Auto-stop when closing menu
     toggleMenu();
   });
-  document.getElementById('chr-highlight-btn').addEventListener('click', () => setMode('highlight'));
-  document.getElementById('chr-remove-btn').addEventListener('click', () => setMode('remove'));
+  document.getElementById("chr-highlight-btn").addEventListener("click", () => {
+    if (currentMode === "highlight") {
+      setMode("none");
+    } else {
+      setMode("highlight");
+    }
+  });
+  document.getElementById("chr-remove-btn").addEventListener("click", () => {
+    if (currentMode === "remove") {
+      setMode("none");
+    } else {
+      setMode("remove");
+    }
+  });
+
+  // Helper function to show custom confirmation dialog
+  function showConfirmDialog(title, message, buttons) {
+    return new Promise((resolve) => {
+      const dialog = document.getElementById("chr-confirm-dialog");
+      const titleEl = document.getElementById("chr-confirm-title");
+      const messageEl = document.getElementById("chr-confirm-message");
+      const buttonsContainer = document.getElementById("chr-confirm-buttons");
+
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+
+      // Clear existing buttons
+      buttonsContainer.innerHTML = "";
+
+      // Add buttons
+      buttons.forEach((btn, index) => {
+        const button = document.createElement("button");
+        button.className = `chr-confirm-btn ${btn.type || ""}`;
+        button.textContent = btn.label;
+        button.addEventListener("click", () => {
+          dialog.style.display = "none";
+          resolve(btn.value);
+        });
+        buttonsContainer.appendChild(button);
+      });
+
+      dialog.style.display = "flex";
+    });
+  }
 
   // Settings panel
-  document.getElementById('chr-settings-btn').addEventListener('click', (e) => {
+  document.getElementById("chr-settings-btn").addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Settings button clicked');
-    const panel = document.getElementById('chr-settings-panel');
-    console.log('Settings panel element:', panel);
-    panel.style.display = 'flex';
-    console.log('Settings panel display set to flex');
-  });
-  document.getElementById('chr-settings-close').addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById('chr-settings-panel').style.display = 'none';
+    const panel = document.getElementById("chr-settings-panel");
+    panel.style.display = "flex";
   });
 
+  document
+    .getElementById("chr-settings-back")
+    .addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById("chr-settings-panel").style.display = "none";
+    });
+
   // Export functionality
-  document.getElementById('chr-export-btn').addEventListener('click', () => {
-    chrome.storage.local.get(['highlights', 'removed'], (result) => {
+  document.getElementById("chr-export-btn").addEventListener("click", () => {
+    chrome.storage.local.get(["highlights", "removed"], (result) => {
       const data = {
         highlights: result.highlights || [],
         removed: result.removed || [],
         exportedAt: new Date().toISOString(),
-        version: '1.0'
+        version: "1.0",
       };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `element-manager-backup-${Date.now()}.json`;
       a.click();
@@ -182,156 +241,206 @@ function createMenu() {
   });
 
   // Import functionality
-  document.getElementById('chr-import-btn').addEventListener('click', () => {
-    document.getElementById('chr-import-file').click();
+  document.getElementById("chr-import-btn").addEventListener("click", () => {
+    document.getElementById("chr-import-file").click();
   });
 
-  document.getElementById('chr-import-file').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  document
+    .getElementById("chr-import-file")
+    .addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target.result);
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const importedData = JSON.parse(event.target.result);
 
-        // Ask user how to handle import
-        const choice = prompt(
-          'How do you want to import?\n\n' +
-          '1 - Overwrite (replace all current data)\n' +
-          '2 - Keep current (ignore imported data)\n' +
-          '3 - Combine with current priority\n' +
-          '4 - Combine with imported priority\n\n' +
-          'Enter 1, 2, 3, or 4:'
-        );
+          // Ask user how to handle import
+          const choice = await showConfirmDialog(
+            "Import Data",
+            "How do you want to import?",
+            [
+              { label: "Cancel", value: "cancel", type: "chr-confirm-cancel" },
+              { label: "Overwrite", value: "1", type: "chr-confirm-yes" },
+              {
+                label: "Combine (current first)",
+                value: "2",
+                type: "chr-confirm-yes",
+              },
+              {
+                label: "Combine (imported first)",
+                value: "3",
+                type: "chr-confirm-yes",
+              },
+            ]
+          );
 
-        if (!choice || !['1', '2', '3', '4'].includes(choice)) {
-          alert('Import cancelled');
-          return;
-        }
-
-        chrome.storage.local.get(['highlights', 'removed'], (result) => {
-          let finalHighlights = result.highlights || [];
-          let finalRemoved = result.removed || [];
-
-          if (choice === '1') {
-            // Overwrite
-            finalHighlights = importedData.highlights || [];
-            finalRemoved = importedData.removed || [];
-          } else if (choice === '2') {
-            // Keep current (do nothing)
-          } else if (choice === '3') {
-            // Combine - current priority
-            const importedHighlights = importedData.highlights || [];
-            const importedRemoved = importedData.removed || [];
-            finalHighlights = [...finalHighlights, ...importedHighlights];
-            finalRemoved = [...finalRemoved, ...importedRemoved];
-          } else if (choice === '4') {
-            // Combine - imported priority
-            const importedHighlights = importedData.highlights || [];
-            const importedRemoved = importedData.removed || [];
-            finalHighlights = [...importedHighlights, ...finalHighlights];
-            finalRemoved = [...importedRemoved, ...finalRemoved];
+          if (choice === "cancel") {
+            return;
           }
 
-          chrome.storage.local.set({
-            highlights: finalHighlights,
-            removed: finalRemoved
-          }, () => {
-            alert('Import successful!');
-            loadLists();
-            // Close settings panel
-            document.getElementById('chr-settings-panel').style.display = 'none';
+          chrome.storage.local.get(["highlights", "removed"], (result) => {
+            let finalHighlights = result.highlights || [];
+            let finalRemoved = result.removed || [];
+
+            if (choice === "1") {
+              // Overwrite
+              finalHighlights = importedData.highlights || [];
+              finalRemoved = importedData.removed || [];
+            } else if (choice === "2") {
+              // Combine - current priority
+              const importedHighlights = importedData.highlights || [];
+              const importedRemoved = importedData.removed || [];
+              finalHighlights = [...finalHighlights, ...importedHighlights];
+              finalRemoved = [...finalRemoved, ...importedRemoved];
+            } else if (choice === "3") {
+              // Combine - imported priority
+              const importedHighlights = importedData.highlights || [];
+              const importedRemoved = importedData.removed || [];
+              finalHighlights = [...importedHighlights, ...finalHighlights];
+              finalRemoved = [...importedRemoved, ...finalRemoved];
+            }
+
+            chrome.storage.local.set(
+              {
+                highlights: finalHighlights,
+                removed: finalRemoved,
+              },
+              () => {
+                loadLists();
+                restorePageState();
+                // Close settings panel
+                document.getElementById("chr-settings-panel").style.display =
+                  "none";
+              }
+            );
           });
-        });
-      } catch (error) {
-        alert('Error importing file: ' + error.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = ''; // Reset file input
-  });
+        } catch (error) {
+          await showConfirmDialog(
+            "Error",
+            "Error importing file: " + error.message,
+            [{ label: "OK", value: "ok", type: "chr-confirm-yes" }]
+          );
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ""; // Reset file input
+    });
 
   // Tab switching
-  document.querySelectorAll('.chr-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll(".chr-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
       const targetTab = btn.dataset.tab;
-      document.querySelectorAll('.chr-tab-btn').forEach(b => b.classList.remove('chr-active'));
-      document.querySelectorAll('.chr-tab-pane').forEach(p => p.classList.remove('chr-active'));
-      btn.classList.add('chr-active');
-      document.getElementById(`chr-tab-${targetTab}`).classList.add('chr-active');
+      document
+        .querySelectorAll(".chr-tab-btn")
+        .forEach((b) => b.classList.remove("chr-active"));
+      document
+        .querySelectorAll(".chr-tab-pane")
+        .forEach((p) => p.classList.remove("chr-active"));
+      btn.classList.add("chr-active");
+      document
+        .getElementById(`chr-tab-${targetTab}`)
+        .classList.add("chr-active");
     });
   });
 
   // Clear buttons
-  document.getElementById('chr-clear-highlights').addEventListener('click', () => {
-    if (confirm('Clear all highlighted elements on this page?')) {
-      // Remove all highlights from current page
-      chrome.storage.local.get(['highlights'], (result) => {
-        const highlights = result.highlights || [];
-        const currentUrl = window.location.href;
+  document
+    .getElementById("chr-clear-highlights")
+    .addEventListener("click", async () => {
+      const choice = await showConfirmDialog(
+        "Clear All Highlights",
+        "Clear all highlighted elements on this page?",
+        [
+          { label: "Cancel", value: "cancel", type: "chr-confirm-cancel" },
+          { label: "Clear All", value: "yes", type: "chr-confirm-yes" },
+        ]
+      );
 
-        highlights.forEach(item => {
-          if (item.url === currentUrl) {
-            try {
-              const element = document.querySelector(item.selector);
-              if (element) {
-                element.classList.remove('chr-highlighted');
+      if (choice === "yes") {
+        // Remove all highlights from current page
+        chrome.storage.local.get(["highlights"], (result) => {
+          const highlights = result.highlights || [];
+          const currentUrl = window.location.href;
+
+          highlights.forEach((item) => {
+            if (item.url === currentUrl) {
+              try {
+                const element = document.querySelector(item.selector);
+                if (element) {
+                  element.classList.remove("chr-highlighted");
+                  element.classList.remove("chr-focus-highlight");
+                }
+              } catch (e) {
+                console.error("Error removing highlight:", e);
               }
-            } catch (e) {
-              console.error('Error removing highlight:', e);
             }
-          }
+          });
+
+          // Remove from storage
+          const remaining = highlights.filter((h) => h.url !== currentUrl);
+          chrome.storage.local.set({ highlights: remaining }, () => {
+            loadLists();
+          });
         });
+      }
+    });
 
-        // Remove from storage
-        const remaining = highlights.filter(h => h.url !== currentUrl);
-        chrome.storage.local.set({ highlights: remaining }, () => {
-          loadLists();
-        });
-      });
-    }
-  });
+  document
+    .getElementById("chr-clear-removed")
+    .addEventListener("click", async () => {
+      const choice = await showConfirmDialog(
+        "Clear All Removed",
+        "Restore all removed elements on this page?",
+        [
+          { label: "Cancel", value: "cancel", type: "chr-confirm-cancel" },
+          { label: "Restore All", value: "yes", type: "chr-confirm-yes" },
+        ]
+      );
 
-  document.getElementById('chr-clear-removed').addEventListener('click', () => {
-    if (confirm('Clear all removed elements on this page?')) {
-      // Restore all removed elements from current page
-      chrome.storage.local.get(['removed'], (result) => {
-        const removed = result.removed || [];
-        const currentUrl = window.location.href;
+      if (choice === "yes") {
+        // Restore all removed elements from current page
+        chrome.storage.local.get(["removed"], (result) => {
+          const removed = result.removed || [];
+          const currentUrl = window.location.href;
 
-        removed.forEach(item => {
-          if (item.url === currentUrl) {
-            try {
-              const element = document.querySelector(item.selector);
-              if (element) {
-                element.style.display = ''; // Restore visibility
+          removed.forEach((item) => {
+            if (item.url === currentUrl) {
+              try {
+                const element = document.querySelector(item.selector);
+                if (element) {
+                  element.style.display = ""; // Restore visibility
+                  element.classList.remove("chr-focus-highlight");
+                }
+              } catch (e) {
+                console.error("Error restoring element:", e);
               }
-            } catch (e) {
-              console.error('Error restoring element:', e);
             }
-          }
-        });
+          });
 
-        // Remove from storage
-        const remaining = removed.filter(r => r.url !== currentUrl);
-        chrome.storage.local.set({ removed: remaining }, () => {
-          loadLists();
+          // Remove from storage
+          const remaining = removed.filter((r) => r.url !== currentUrl);
+          chrome.storage.local.set({ removed: remaining }, () => {
+            loadLists();
+          });
         });
-      });
-    }
-  });
+      }
+    });
 
   // Load checkbox state from storage
-  chrome.storage.local.get(['rememberChanges'], (result) => {
-    const rememberChanges = result.rememberChanges !== undefined ? result.rememberChanges : true;
-    document.getElementById('chr-remember-checkbox').checked = rememberChanges;
+  chrome.storage.local.get(["rememberChanges"], (result) => {
+    const rememberChanges =
+      result.rememberChanges !== undefined ? result.rememberChanges : true;
+    document.getElementById("chr-remember-checkbox").checked = rememberChanges;
   });
 
   // Save checkbox state on change
-  document.getElementById('chr-remember-checkbox').addEventListener('change', (e) => {
-    chrome.storage.local.set({ rememberChanges: e.target.checked });
-  });
+  document
+    .getElementById("chr-remember-checkbox")
+    .addEventListener("change", (e) => {
+      chrome.storage.local.set({ rememberChanges: e.target.checked });
+    });
 
   loadLists();
 }
@@ -343,18 +452,18 @@ function toggleMenu() {
     menuOpen = true;
   } else {
     menuOpen = !menuOpen;
-    menuElement.classList.toggle('chr-menu-open', menuOpen);
+    menuElement.classList.toggle("chr-menu-open", menuOpen);
 
     // Auto-stop mode when closing menu
     if (!menuOpen) {
-      setMode('none');
+      setMode("none");
     }
   }
 }
 
 // Check if changes should be saved
 function shouldSaveChanges() {
-  const checkbox = document.getElementById('chr-remember-checkbox');
+  const checkbox = document.getElementById("chr-remember-checkbox");
   return checkbox ? checkbox.checked : true; // Default to true if checkbox not found
 }
 
@@ -363,77 +472,79 @@ function setMode(mode) {
   currentMode = mode;
 
   // Update button states
-  document.querySelectorAll('.chr-mode-btn').forEach(btn => {
-    btn.classList.remove('chr-active');
+  document.querySelectorAll(".chr-mode-btn").forEach((btn) => {
+    btn.classList.remove("chr-active");
   });
 
-  const previewAction = document.getElementById('chr-preview-action');
+  const previewAction = document.getElementById("chr-preview-action");
 
-  if (mode === 'highlight') {
-    document.getElementById('chr-highlight-btn').classList.add('chr-active');
+  if (mode === "highlight") {
+    document.getElementById("chr-highlight-btn").classList.add("chr-active");
     if (previewAction) {
-      previewAction.textContent = 'Click to highlight this element';
-      previewAction.className = 'chr-preview-action chr-action-highlight';
+      previewAction.textContent = "Click to highlight this element";
+      previewAction.className = "chr-preview-action chr-action-highlight";
     }
-  } else if (mode === 'remove') {
-    document.getElementById('chr-remove-btn').classList.add('chr-active');
+  } else if (mode === "remove") {
+    document.getElementById("chr-remove-btn").classList.add("chr-active");
     if (previewAction) {
-      previewAction.textContent = 'Click to remove this element';
-      previewAction.className = 'chr-preview-action chr-action-remove';
+      previewAction.textContent = "Click to remove this element";
+      previewAction.className = "chr-preview-action chr-action-remove";
     }
   } else {
     // mode === 'none' (stopped)
-    const hoverPreview = document.getElementById('chr-hover-preview');
+    const hoverPreview = document.getElementById("chr-hover-preview");
     if (hoverPreview) {
-      hoverPreview.style.display = 'none';
+      hoverPreview.style.display = "none";
     }
   }
 
-  document.body.style.cursor = mode === 'none' ? 'default' : 'crosshair';
+  document.body.style.cursor = mode === "none" ? "default" : "crosshair";
 
   if (hoveredElement) {
-    hoveredElement.classList.remove('chr-hover-highlight', 'chr-hover-remove');
+    hoveredElement.classList.remove("chr-hover-highlight", "chr-hover-remove");
     hoveredElement = null;
   }
 }
 
 // Highlight effect on hover
 function handleMouseOver(e) {
-  if (currentMode === 'none' || !menuElement) return;
+  if (currentMode === "none" || !menuElement) return;
 
   // Don't interact with menu elements
-  if (e.target.closest('#chr-menu')) return;
+  if (e.target.closest("#chr-menu")) return;
 
   e.stopPropagation();
   hoveredElement = e.target;
 
-  if (currentMode === 'highlight') {
-    hoveredElement.classList.add('chr-hover-highlight');
-  } else if (currentMode === 'remove') {
-    hoveredElement.classList.add('chr-hover-remove');
+  if (currentMode === "highlight") {
+    hoveredElement.classList.add("chr-hover-highlight");
+  } else if (currentMode === "remove") {
+    hoveredElement.classList.add("chr-hover-remove");
   }
 
   // Show preview in menu
-  const previewDiv = document.getElementById('chr-hover-preview');
-  const previewText = document.getElementById('chr-preview-text');
-  previewDiv.style.display = 'block';
-  previewText.textContent = hoveredElement.textContent.substring(0, 100).trim() || hoveredElement.tagName;
+  const previewDiv = document.getElementById("chr-hover-preview");
+  const previewText = document.getElementById("chr-preview-text");
+  previewDiv.style.display = "block";
+  previewText.textContent =
+    hoveredElement.textContent.substring(0, 100).trim() ||
+    hoveredElement.tagName;
 }
 
 function handleMouseOut(e) {
-  if (currentMode === 'none' || !menuElement) return;
-  if (e.target.closest('#chr-menu')) return;
+  if (currentMode === "none" || !menuElement) return;
+  if (e.target.closest("#chr-menu")) return;
 
   e.stopPropagation();
   if (hoveredElement) {
-    hoveredElement.classList.remove('chr-hover-highlight', 'chr-hover-remove');
+    hoveredElement.classList.remove("chr-hover-highlight", "chr-hover-remove");
     hoveredElement = null;
   }
 }
 
 function handleClick(e) {
-  if (currentMode === 'none' || !menuElement) return;
-  if (e.target.closest('#chr-menu')) return;
+  if (currentMode === "none" || !menuElement) return;
+  if (e.target.closest("#chr-menu")) return;
 
   e.preventDefault();
   e.stopPropagation();
@@ -443,84 +554,93 @@ function handleClick(e) {
   const url = window.location.href;
   const hostname = window.location.hostname;
 
-  if (currentMode === 'highlight') {
-    element.classList.remove('chr-hover-highlight');
-    element.classList.add('chr-highlighted');
+  if (currentMode === "highlight") {
+    element.classList.remove("chr-hover-highlight");
+    element.classList.add("chr-highlighted");
 
-    // Only save to storage if checkbox is checked
-    if (shouldSaveChanges()) {
-      chrome.runtime.sendMessage({
-        action: 'addHighlight',
-        data: {
-          url: url,
-          hostname: hostname,
-          selector: selector,
-          text: element.textContent.substring(0, 100),
-          timestamp: Date.now()
-        }
-      });
-      loadLists();
-    }
-  } else if (currentMode === 'remove') {
-    element.classList.remove('chr-hover-remove');
-    element.style.display = 'none';
+    const rememberChecked = shouldSaveChanges();
 
-    // Only save to storage if checkbox is checked
-    if (shouldSaveChanges()) {
-      chrome.runtime.sendMessage({
-        action: 'addRemoved',
-        data: {
-          url: url,
-          hostname: hostname,
-          selector: selector,
-          text: element.textContent.substring(0, 100),
-          timestamp: Date.now()
-        }
-      });
-      loadLists();
-    }
+    // Always add to list, but mark if it should be persisted
+    chrome.runtime.sendMessage({
+      action: "addHighlight",
+      data: {
+        url: url,
+        hostname: hostname,
+        selector: selector,
+        text: element.textContent.substring(0, 100),
+        timestamp: Date.now(),
+        persisted: rememberChecked,
+      },
+    });
+    loadLists();
+  } else if (currentMode === "remove") {
+    element.classList.remove("chr-hover-remove");
+    element.style.display = "none";
+
+    const rememberChecked = shouldSaveChanges();
+
+    // Always add to list, but mark if it should be persisted
+    chrome.runtime.sendMessage({
+      action: "addRemoved",
+      data: {
+        url: url,
+        hostname: hostname,
+        selector: selector,
+        text: element.textContent.substring(0, 100),
+        timestamp: Date.now(),
+        persisted: rememberChecked,
+      },
+    });
+    loadLists();
   }
 
   // Hide preview after action
-  document.getElementById('chr-hover-preview').style.display = 'none';
+  document.getElementById("chr-hover-preview").style.display = "none";
 }
 
 // Load and display lists
 function loadLists() {
-  chrome.storage.local.get(['highlights', 'removed'], (result) => {
+  chrome.storage.local.get(["highlights", "removed"], (result) => {
     const highlights = result.highlights || [];
     const removed = result.removed || [];
     const currentUrl = window.location.href;
 
     // Update counts
-    document.getElementById('chr-highlight-count').textContent = highlights.filter(h => h.url === currentUrl).length;
-    document.getElementById('chr-removed-count').textContent = removed.filter(r => r.url === currentUrl).length;
+    document.getElementById("chr-highlight-count").textContent =
+      highlights.filter((h) => h.url === currentUrl).length;
+    document.getElementById("chr-removed-count").textContent = removed.filter(
+      (r) => r.url === currentUrl
+    ).length;
 
     // Display highlights
-    const highlightsList = document.getElementById('chr-highlights-list');
-    const pageHighlights = highlights.filter(h => h.url === currentUrl);
+    const highlightsList = document.getElementById("chr-highlights-list");
+    const pageHighlights = highlights.filter((h) => h.url === currentUrl);
 
-    highlightsList.innerHTML = '';
+    highlightsList.innerHTML = "";
     if (pageHighlights.length === 0) {
-      highlightsList.innerHTML = '<p class="chr-empty-state">No highlighted elements</p>';
+      highlightsList.innerHTML =
+        '<p class="chr-empty-state">No highlighted elements</p>';
     } else {
       pageHighlights.reverse().forEach((item, index) => {
         const actualIndex = highlights.indexOf(item);
-        highlightsList.appendChild(createListItem(item, actualIndex, 'highlights'));
+        highlightsList.appendChild(
+          createListItem(item, actualIndex, "highlights")
+        );
       });
     }
 
     // Display removed
-    const removedList = document.getElementById('chr-removed-list');
-    const pageRemoved = removed.filter(r => r.url === currentUrl);
+    const removedList = document.getElementById("chr-removed-list");
+    const pageRemoved = removed.filter((r) => r.url === currentUrl);
 
-    removedList.innerHTML = '';
+    removedList.innerHTML = "";
     if (pageRemoved.length === 0) {
-      removedList.innerHTML = '<p class="chr-empty-state">No removed elements</p>';
+      removedList.innerHTML =
+        '<p class="chr-empty-state">No removed elements</p>';
     } else {
       pageRemoved.reverse().forEach((item, index) => {
         const actualIndex = removed.indexOf(item);
-        removedList.appendChild(createListItem(item, actualIndex, 'removed'));
+        removedList.appendChild(createListItem(item, actualIndex, "removed"));
       });
     }
   });
@@ -528,73 +648,104 @@ function loadLists() {
 
 // Create list item
 function createListItem(item, index, type) {
-  const div = document.createElement('div');
-  div.className = 'chr-list-item';
+  const div = document.createElement("div");
+  div.className = "chr-list-item";
 
-  const text = item.text.trim().replace(/\s+/g, ' ');
-  const truncated = text.length > 50 ? text.substring(0, 50) + '...' : text;
+  const text = item.text.trim().replace(/\s+/g, " ");
+  const truncated = text.length > 50 ? text.substring(0, 50) + "..." : text;
+  const isPersisted = item.persisted !== false; // Default to true if not set
 
   div.innerHTML = `
     <div class="chr-item-content">
-      <div class="chr-item-text">${truncated || 'No text'}</div>
+      <div class="chr-item-text">${truncated || "No text"}</div>
       <div class="chr-item-selector">${item.selector}</div>
+      <label class="chr-item-remember">
+        <input type="checkbox" class="chr-item-checkbox" data-index="${index}" data-type="${type}" ${
+    isPersisted ? "checked" : ""
+  }>
+        <span>Remember</span>
+      </label>
     </div>
     <button class="chr-delete-btn" data-index="${index}" data-type="${type}">×</button>
   `;
 
   // Hover to highlight element on page
-  div.addEventListener('mouseenter', () => {
+  div.addEventListener("mouseenter", () => {
     try {
       const element = document.querySelector(item.selector);
       if (element) {
-        element.classList.add('chr-focus-highlight');
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add("chr-focus-highlight");
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     } catch (e) {
-      console.error('Error highlighting element:', e);
+      console.error("Error highlighting element:", e);
     }
   });
 
-  div.addEventListener('mouseleave', () => {
+  div.addEventListener("mouseleave", () => {
     try {
       const element = document.querySelector(item.selector);
       if (element) {
-        element.classList.remove('chr-focus-highlight');
+        element.classList.remove("chr-focus-highlight");
       }
     } catch (e) {
-      console.error('Error removing focus highlight:', e);
+      console.error("Error removing focus highlight:", e);
     }
   });
 
-  const deleteBtn = div.querySelector('.chr-delete-btn');
-  deleteBtn.addEventListener('click', () => {
+  const deleteBtn = div.querySelector(".chr-delete-btn");
+  deleteBtn.addEventListener("click", () => {
     // Remove visual effect from page
-    if (type === 'highlights') {
+    if (type === "highlights") {
       try {
         const element = document.querySelector(item.selector);
         if (element) {
-          element.classList.remove('chr-highlighted');
-          element.classList.remove('chr-focus-highlight'); // Also remove hover highlight
+          element.classList.remove("chr-highlighted");
+          element.classList.remove("chr-focus-highlight"); // Also remove hover highlight
         }
       } catch (e) {
-        console.error('Error removing highlight:', e);
+        console.error("Error removing highlight:", e);
       }
-    } else if (type === 'removed') {
+    } else if (type === "removed") {
       try {
         const element = document.querySelector(item.selector);
         if (element) {
-          element.style.display = ''; // Restore visibility
-          element.classList.remove('chr-focus-highlight'); // Also remove hover highlight
+          element.style.display = ""; // Restore visibility
+          element.classList.remove("chr-focus-highlight"); // Also remove hover highlight
         }
       } catch (e) {
-        console.error('Error restoring element:', e);
+        console.error("Error restoring element:", e);
       }
     }
 
     // Remove from storage
-    const action = type === 'highlights' ? 'removeHighlight' : 'removeRemoved';
+    const action = type === "highlights" ? "removeHighlight" : "removeRemoved";
     chrome.runtime.sendMessage({ action: action, index: index });
     setTimeout(loadLists, 100);
+  });
+
+  // Remember checkbox
+  const checkbox = div.querySelector(".chr-item-checkbox");
+  checkbox.addEventListener("change", (e) => {
+    e.stopPropagation();
+    const isPersisted = e.target.checked;
+
+    chrome.storage.local.get([type], (result) => {
+      const items = result[type] || [];
+      if (isPersisted) {
+        // Mark as persisted in storage
+        if (items[index]) {
+          items[index].persisted = true;
+          skipNextStorageUpdate = true;
+          chrome.storage.local.set({ [type]: items });
+        }
+      } else {
+        // Remove from storage but keep in current session list and visual effect on page
+        items.splice(index, 1);
+        skipNextStorageUpdate = true;
+        chrome.storage.local.set({ [type]: items });
+      }
+    });
   });
 
   return div;
@@ -604,32 +755,33 @@ function createListItem(item, index, type) {
 function restorePageState() {
   const url = window.location.href;
 
-  chrome.storage.local.get(['highlights', 'removed'], (result) => {
+  chrome.storage.local.get(["highlights", "removed"], (result) => {
     const highlights = result.highlights || [];
     const removed = result.removed || [];
 
-    highlights.forEach(item => {
-      if (item.url === url) {
+    // Only restore persisted items
+    highlights.forEach((item) => {
+      if (item.url === url && item.persisted !== false) {
         try {
           const element = document.querySelector(item.selector);
           if (element) {
-            element.classList.add('chr-highlighted');
+            element.classList.add("chr-highlighted");
           }
         } catch (e) {
-          console.error('Invalid selector:', item.selector);
+          console.error("Invalid selector:", item.selector);
         }
       }
     });
 
-    removed.forEach(item => {
-      if (item.url === url) {
+    removed.forEach((item) => {
+      if (item.url === url && item.persisted !== false) {
         try {
           const element = document.querySelector(item.selector);
           if (element) {
-            element.style.display = 'none';
+            element.style.display = "none";
           }
         } catch (e) {
-          console.error('Invalid selector:', item.selector);
+          console.error("Invalid selector:", item.selector);
         }
       }
     });
@@ -638,7 +790,7 @@ function restorePageState() {
 
 // Listen for extension icon click
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'toggleMenu') {
+  if (message.action === "toggleMenu") {
     toggleMenu();
     sendResponse({ success: true });
   }
@@ -658,28 +810,30 @@ function initialize() {
 }
 
 // Add event listeners
-document.addEventListener('mouseover', handleMouseOver, true);
-document.addEventListener('mouseout', handleMouseOut, true);
-document.addEventListener('click', handleClick, true);
+document.addEventListener("mouseover", handleMouseOver, true);
+document.addEventListener("mouseout", handleMouseOut, true);
+document.addEventListener("click", handleClick, true);
 
 // Keyboard shortcut: Ctrl+Shift+E (or Cmd+Shift+E on Mac)
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "E") {
     e.preventDefault();
     toggleMenu();
   }
 });
 
 // Initialize when page loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initialize);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initialize);
 } else {
   initialize();
 }
 
 // Listen for storage changes
+let skipNextStorageUpdate = false;
 chrome.storage.onChanged.addListener(() => {
-  if (menuElement) {
+  if (menuElement && !skipNextStorageUpdate) {
     loadLists();
   }
+  skipNextStorageUpdate = false;
 });
