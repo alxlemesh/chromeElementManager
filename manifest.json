@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Element Highlighter & Remover",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Highlight or remove elements on any webpage with a simple click",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
