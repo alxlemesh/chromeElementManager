@@ -1,3 +1,31 @@
+// Function to inject content scripts using chrome.scripting API
+// Used for pages that were loaded before the extension was installed
+async function injectContentScripts(tabId) {
+  try {
+    // Inject JavaScript content script
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ["content.js"],
+    });
+
+    // Inject CSS styles
+    await chrome.scripting.insertCSS({
+      target: { tabId: tabId },
+      files: ["content.css"],
+    });
+
+    console.log("Content script injected successfully, trying again...");
+
+    // Try sending message again after injection
+    setTimeout(() => {
+      chrome.tabs.sendMessage(tabId, { action: "toggleMenu" });
+    }, 100);
+  } catch (err) {
+    console.error("Failed to inject content script:", err);
+    console.log("Please refresh the page and try again");
+  }
+}
+
 // Listen for messages from content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "addHighlight") {
@@ -49,31 +77,9 @@ chrome.action.onClicked.addListener(async (tab) => {
         );
         console.log("Attempting to inject content script...");
 
-        // Try to inject the content script manually
-        chrome.scripting
-          .executeScript({
-            target: { tabId: tab.id },
-            files: ["content.js"],
-          })
-          .then(() => {
-            return chrome.scripting.insertCSS({
-              target: { tabId: tab.id },
-              files: ["content.css"],
-            });
-          })
-          .then(() => {
-            console.log(
-              "Content script injected successfully, trying again..."
-            );
-            // Try sending message again after injection
-            setTimeout(() => {
-              chrome.tabs.sendMessage(tab.id, { action: "toggleMenu" });
-            }, 100);
-          })
-          .catch((err) => {
-            console.error("Failed to inject content script:", err);
-            console.log("Please refresh the page and try again");
-          });
+        // Inject content script manually for pages loaded before extension was installed
+        // This requires the 'scripting' permission
+        injectContentScripts(tab.id);
       } else {
         console.log("Menu toggle message sent successfully", response);
       }
