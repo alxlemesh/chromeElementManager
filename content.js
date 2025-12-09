@@ -54,6 +54,7 @@ function createMenu() {
       <h3>Element Highlighter & Remover</h3>
       <div class="chr-header-buttons">
         <button class="chr-settings-btn" id="chr-settings-btn">⚙️</button>
+        <button class="chr-minimize-btn" id="chr-minimize-btn">−</button>
         <button class="chr-close-btn" id="chr-close-menu">×</button>
       </div>
     </div>
@@ -158,6 +159,15 @@ function createMenu() {
     setMode("none"); // Auto-stop when closing menu
     toggleMenu();
   });
+
+  document.getElementById("chr-minimize-btn").addEventListener("click", () => {
+    const isMinimized = menu.classList.contains("chr-menu-minimized");
+    if (isMinimized) {
+      menu.classList.remove("chr-menu-minimized");
+    } else {
+      menu.classList.add("chr-menu-minimized");
+    }
+  });
   document.getElementById("chr-highlight-btn").addEventListener("click", () => {
     if (currentMode === "highlight") {
       setMode("none");
@@ -193,13 +203,13 @@ function createMenu() {
         button.className = `chr-confirm-btn ${btn.type || ""}`;
         button.textContent = btn.label;
         button.addEventListener("click", () => {
-          dialog.style.display = "none";
+          dialog.style.setProperty("display", "none", "important");
           resolve(btn.value);
         });
         buttonsContainer.appendChild(button);
       });
 
-      dialog.style.display = "flex";
+      dialog.style.setProperty("display", "flex", "important");
     });
   }
 
@@ -345,10 +355,18 @@ function createMenu() {
     });
   });
 
-  // Clear buttons
-  document
-    .getElementById("chr-clear-highlights")
-    .addEventListener("click", async () => {
+  // Clear buttons - use event delegation on the menu element
+  menu.addEventListener("click", async (e) => {
+    // Handle clear highlights button
+    if (
+      e.target.id === "chr-clear-highlights" ||
+      e.target.closest("#chr-clear-highlights")
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      console.log("Clear highlights button clicked");
+
       const choice = await showConfirmDialog(
         "Clear All Highlights",
         "Clear all highlighted elements on this page?",
@@ -358,12 +376,18 @@ function createMenu() {
         ]
       );
 
+      console.log("User choice:", choice);
+
       if (choice === "yes") {
         // Remove all highlights from current page
         chrome.storage.local.get(["highlights"], (result) => {
           const highlights = result.highlights || [];
           const currentUrl = window.location.href;
 
+          console.log("Clearing highlights for:", currentUrl);
+          console.log("Total highlights:", highlights.length);
+
+          // Remove visual highlights from DOM
           highlights.forEach((item) => {
             if (item.url === currentUrl) {
               try {
@@ -380,16 +404,25 @@ function createMenu() {
 
           // Remove from storage
           const remaining = highlights.filter((h) => h.url !== currentUrl);
+          skipNextStorageUpdate = true;
           chrome.storage.local.set({ highlights: remaining }, () => {
+            console.log("Highlights cleared, reloading list");
             loadLists();
           });
         });
       }
-    });
+    }
 
-  document
-    .getElementById("chr-clear-removed")
-    .addEventListener("click", async () => {
+    // Handle clear removed button
+    if (
+      e.target.id === "chr-clear-removed" ||
+      e.target.closest("#chr-clear-removed")
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      console.log("Clear removed button clicked");
+
       const choice = await showConfirmDialog(
         "Clear All Removed",
         "Restore all removed elements on this page?",
@@ -399,12 +432,18 @@ function createMenu() {
         ]
       );
 
+      console.log("User choice:", choice);
+
       if (choice === "yes") {
         // Restore all removed elements from current page
         chrome.storage.local.get(["removed"], (result) => {
           const removed = result.removed || [];
           const currentUrl = window.location.href;
 
+          console.log("Restoring removed elements for:", currentUrl);
+          console.log("Total removed:", removed.length);
+
+          // Restore visibility in DOM
           removed.forEach((item) => {
             if (item.url === currentUrl) {
               try {
@@ -421,12 +460,15 @@ function createMenu() {
 
           // Remove from storage
           const remaining = removed.filter((r) => r.url !== currentUrl);
+          skipNextStorageUpdate = true;
           chrome.storage.local.set({ removed: remaining }, () => {
+            console.log("Removed elements restored, reloading list");
             loadLists();
           });
         });
       }
-    });
+    }
+  });
 
   // Load checkbox state from storage
   chrome.storage.local.get(["rememberChanges"], (result) => {
@@ -450,6 +492,10 @@ function toggleMenu() {
   if (!menuElement) {
     createMenu();
     menuOpen = true;
+    // Trigger animation after a short delay to ensure DOM is ready
+    setTimeout(() => {
+      menuElement.classList.add("chr-menu-open");
+    }, 10);
   } else {
     menuOpen = !menuOpen;
     menuElement.classList.toggle("chr-menu-open", menuOpen);

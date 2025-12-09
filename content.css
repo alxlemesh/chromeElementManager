@@ -38,7 +38,9 @@
   flex-direction: column !important;
   overflow: visible !important;
   transform: translateY(calc(100% + 40px)) !important;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   color: #333 !important;
   font-size: 13px !important;
   line-height: 1.4 !important;
@@ -46,6 +48,42 @@
 
 .chr-menu.chr-menu-open {
   transform: translateY(0) !important;
+}
+
+/* Minimized state */
+
+.chr-menu.chr-menu-minimized {
+  max-height: 90px !important;
+  border-radius: 12px !important;
+}
+
+.chr-menu.chr-menu-minimized .chr-menu-header {
+  border-radius: 12px !important;
+}
+
+.chr-menu.chr-menu-minimized .chr-menu-wrapper {
+  overflow: hidden !important;
+}
+
+.chr-menu.chr-menu-minimized .chr-menu-controls,
+.chr-menu.chr-menu-minimized .chr-save-option,
+.chr-menu.chr-menu-minimized .chr-hover-preview,
+.chr-menu.chr-menu-minimized .chr-tabs,
+.chr-menu.chr-menu-minimized .chr-tab-content,
+.chr-menu.chr-menu-minimized .chr-footer {
+  display: none !important;
+}
+
+/* When minimized, hide original text and show + icon */
+.chr-menu-minimized .chr-minimize-btn {
+  font-size: 0 !important;
+}
+
+.chr-menu-minimized .chr-minimize-btn::after {
+  content: "+" !important;
+  font-size: 20px !important;
+  color: white !important;
+  display: inline-block !important;
 }
 
 /* Menu wrapper for positioning context */
@@ -83,6 +121,7 @@
 }
 
 .chr-settings-btn,
+.chr-minimize-btn,
 .chr-close-btn {
   width: 28px !important;
   height: 28px !important;
@@ -101,8 +140,14 @@
 }
 
 .chr-settings-btn:hover,
+.chr-minimize-btn:hover,
 .chr-close-btn:hover {
   background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.chr-minimize-btn {
+  font-size: 24px !important;
+  font-weight: bold !important;
 }
 
 /* Mode controls */
